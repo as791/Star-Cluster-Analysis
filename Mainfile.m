@@ -218,18 +218,15 @@ var_pmdec=var(pmdec);
 
 
 %Quartiles (25% and 75%):-
-quartile1ra=(median_ra+min_value_ra)/2;
-quartile2ra=(median_ra+max_value_ra)/2;
-quartile1dec=(median_dec+min_value_dec)/2;
-quartile2dec=(median_dec+max_value_dec)/2;
-quartile1pmra=(median_pmra+min_value_pmra)/2;
-quartile2pmra=(median_pmra+max_value_pmra)/2;
-quartile1pmdec=(median_pmdec+min_value_pmdec)/2;
-quartile2pmdec=(median_pmdec+max_value_pmdec)/2;
+raquartiles=prctile(ra,[25 75]);
+decquartiles=prctile(dec,[25 75]);
+pmraquartiles=prctile(pmra,[25 75]);
+pmdecquartiles=prctile(pmdec,[25 75]);
 
 %Box Plot --> Indicates Median, 25th and 75th quartiles.
 %Whiskers are lines extending from each end of the box to show the extent of the rest of the data.
 %Outliers are data with values beyond the ends of the whiskers.
+[ra3,dec3]=vectorreadjust(ra2,dec2);
 boxplot(ra2);title('Boxplot of RA without normalization');xlabel('Stars');ylabel('RA');
 figure;
 boxplot(dec2);title('Boxplot of DEC without normalization');xlabel('Stars');ylabel('DEC');
