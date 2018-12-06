@@ -24,12 +24,80 @@ clc;close all;
 %pmdec_i=table2array(pmdec_i);
 %rcl=table2array(rcl);
 
+%Removing outliers and readjusting vector length.
+[ra2,dec2]=vectorreadjust(ra,dec);
+
+%Removal of outliers of b and v and readjusting length.
+
+k=0;
+for i=1:length(b_i)
+    if (b_i(i)== -99.990)
+        k=k+1;
+    end
+end
+temp_b=zeros(length(b_i)-k,1);
+temp_v=zeros(length(v_i)-k,1);
+z=1;
+for i=1:length(b_i)
+    if (b_i(i)== -99.990)
+        continue;
+    else
+        temp_b(z)=b_i(i);
+        temp_v(z)=v_i(i);
+        z=z+1;
+    end
+end
+[temp_b,temp_v]=vectorreadjust(temp_b,temp_v);
+b_f=zeros(length(temp_b)+k,1);
+v_f=zeros(length(temp_v)+k,1);
+for i=1:length(temp_b)+k
+    if (i<=length(temp_b))
+        b_f(i)=temp_b(i);
+        v_f(i)=temp_v(i);
+    else
+        b_f(i)= -99.990;
+        v_f(i)= -99.990;
+    end
+end
+
+%Removal of outliers of pmra and pmdec and readjustment of length.
+
+k=0;
+for i=1:length(pmra_i)
+    if (pmra_i(i)==9999.90 )
+        k=k+1;
+    end
+end
+temp_pmra=zeros(length(pmra_i)-k,1);
+temp_pmdec=zeros(length(pmdec_i)-k,1);
+z=1;
+for i=1:length(pmra_i)
+    if (pmra_i(i)== 9999.90)
+        continue;
+    else
+        temp_pmra(z)=pmra_i(i);
+        temp_pmdec(z)=pmdec_i(i);
+        z=z+1;
+    end
+end
+[temp_pmra,temp_pmdec]=vectorreadjust(temp_pmra,temp_pmdec);
+pmra_f=zeros(length(temp_pmra)+k,1);
+pmdec_f=zeros(length(temp_pmdec)+k,1);
+for i=1:length(temp_pmra)+k
+    if (i<=length(temp_pmra))
+        pmra_f(i)=temp_pmra(i);
+        pmdec_f(i)=temp_pmdec(i);
+    else
+        pmra_f(i)= 9999.90;
+        pmdec_f(i)= 9999.90;
+    end
+end
 %PREDICTION OF MISSING VALUES BY LINEAR REGRESSION USING PCA
 
-fprintf('Model for B_mag\n');b=predict_values([ra,dec],b_i);
-fprintf('\nModel for V_mag\n');v=predict_values([ra,dec],v_i);
-fprintf('\nModel for pmra\n');pmra=predict_values([ra,dec],pmra_i);
-fprintf('\nModel for pmdec\n');pmdec=predict_values([ra,dec],pmdec_i);
+fprintf('\nModel for B_mag\n');b=predict_values([ra2,dec2],b_f);
+fprintf('\nModel for V_mag\n');v=predict_values([ra2,dec2],v_f);
+fprintf('\nModel for pmra\n');pmra=predict_values([ra2,dec2],pmra_f);
+fprintf('\nModel for pmdec\n');pmdec=predict_values([ra2,dec2],pmdec_f);
 
 %Color Magnitude Diagram
 b_v=b-v;
@@ -63,13 +131,13 @@ figure;
     %declination to get an idea that what is ideal boundary of the cluster
 %--------------------------------------------------------------------------%
 
-mu=[mean(ra),mean(dec)];Sigma=[var(ra) var(dec)];
-x1 = 0.1310:0.0125:0.6707; x2 = -73.3264:0.025:-70.8334;
+mu=[mean(ra2),mean(dec2)];Sigma=[var(ra2) var(dec2)];
+x1 = 0.1310:0.0125:0.6707; x2 = -73.3264:0.025:-70.9165;
 [X1,X2] = meshgrid(x1,x2);
 F = mvnpdf([X1(:) X2(:)],mu,Sigma);
 F = reshape(F,length(x2),length(x1));
 mvncdf([0 0],[1 1],mu,Sigma);
-scatter(ra, dec,1);
+scatter(ra2, dec2,1);
 hold on;
 contour(x1,x2,F);title('RA vs DEC');ylabel('RA(in h)');xlabel('DEC(in deg)');
 hold off;
@@ -79,7 +147,7 @@ surf(x1,x2,F);title('predicted distribution function of stars');ylabel('RA');xla
 
 %PM_RA vs PM_DEC of stars based on proper motion 
 mu=[mean(pmra,1),mean(pmdec,1)];Sigma=[var(pmra,1) var(pmdec,1)];
-x1 = -377.5700:2:466.5700; x2 = -312.2000:4:412.7300;
+x1 = -41.99:2:50.56; x2 = -40.54:4:38.65;
 [X1,X2] = meshgrid(x1,x2);
 F = mvnpdf([X1(:) X2(:)],mu,Sigma);
 F = reshape(F,length(x2),length(x1));
@@ -93,9 +161,6 @@ figure;
 
 %normal distribution of stars based on proper motion
 surf(x1,x2,F);title('predicted distribution function of stars according to proper motion');ylabel('pmRA');xlabel('pmDEC');figure;  
-
-%plot of pmra vs angular distance of stars from cluster's center and pmdec vs angular distance  of stars from cluster's center
-subplot(2,1,1);plot((rcl),(pmra),'.');xlabel('rcl(deg)');ylabel('pmra mas/yr');subplot(2,1,2);plot(rcl,(pmdec),'.');xlabel('rcl(deg)');ylabel('pmdec mas/yr');figure;
 
 %temperature of every star using theoritical formula in kelvin
 temp=4600.*(1./(0.92.*(b_v)+1.7)+1./(0.92.*(b_v)+0.62)); 
@@ -112,10 +177,10 @@ temp=4600.*(1./(0.92.*(b_v)+1.7)+1./(0.92.*(b_v)+0.62));
 %Descriptive Statistics for RA,DEC,pmRA and pmDEC.
 
 %Maximum and minimum values:-
-[max_value_ra,indexramax]=max(ra);
-[max_value_dec,indexdecmax]=max(dec);
-[min_value_ra,indexramin]=min(ra);
-[min_value_dec,indexdecmin]=min(dec);
+[max_value_ra,indexramax]=max(ra2);
+[max_value_dec,indexdecmax]=max(dec2);
+[min_value_ra,indexramin]=min(ra2);
+[min_value_dec,indexdecmin]=min(dec2);
 [max_value_pmra,indexpmramax]=max(pmra);
 [max_value_pmdec,indexpmdecmax]=max(pmdec);
 [min_value_pmra,indexpmramin]=min(pmra);
@@ -128,12 +193,12 @@ range_pmra=max_value_pmra-min_value_pmra;
 range_pmdec=max_value_pmdec-min_value_pmdec;
 
 %Mean, Median(50% quartile) and Mode:-
-mean_ra=mean(ra);
-mean_dec=mean(dec);
-median_ra=median(ra);
-median_dec=median(dec);
-mode_ra=mode(ra);
-mode_dec=mode(dec);
+mean_ra=mean(ra2);
+mean_dec=mean(dec2);
+median_ra=median(ra2);
+median_dec=median(dec2);
+mode_ra=mode(ra2);
+mode_dec=mode(dec2);
 mean_pmra=mean(pmra);
 mean_pmdec=mean(pmdec);
 median_pmra=median(pmra);
@@ -142,10 +207,10 @@ mode_pmra=mode(pmra);
 mode_pmdec=mode(pmdec);
 
 %Standard deviation and variance:-
-stadev_ra=std(ra);
-stadev_dec=std(dec);
-var_ra=var(ra);
-var_dec=var(dec);
+stadev_ra=std(ra2);
+stadev_dec=std(dec2);
+var_ra=var(ra2);
+var_dec=var(dec2);
 stadev_pmra=std(pmra);
 stadev_pmdec=std(pmdec);
 var_pmra=var(pmra);
@@ -165,9 +230,9 @@ quartile2pmdec=(median_pmdec+max_value_pmdec)/2;
 %Box Plot --> Indicates Median, 25th and 75th quartiles.
 %Whiskers are lines extending from each end of the box to show the extent of the rest of the data.
 %Outliers are data with values beyond the ends of the whiskers.
-boxplot(ra);title('Boxplot of RA without normalization');xlabel('Stars');ylabel('RA');
+boxplot(ra2);title('Boxplot of RA without normalization');xlabel('Stars');ylabel('RA');
 figure;
-boxplot(dec);title('Boxplot of DEC without normalization');xlabel('Stars');ylabel('DEC');
+boxplot(dec2);title('Boxplot of DEC without normalization');xlabel('Stars');ylabel('DEC');
 figure;
 boxplot(pmra);title('Boxplot of pmRA without normalization');xlabel('Stars');ylabel('pmRA');
 figure;
@@ -175,10 +240,10 @@ boxplot(pmdec);title('Boxplot of pmDEC without normalization');xlabel('Stars');y
 figure;
 
 %Box Plot after Normalization
-ranorm=(ra-mean_ra)/(stadev_ra);
+ranorm=(ra2-mean_ra)/(stadev_ra);
 boxplot(ranorm);title('Boxplot of RA with normalization');xlabel('Stars');ylabel('RA');
 figure;
-decnorm=(dec-mean_dec)/(stadev_dec);
+decnorm=(dec2-mean_dec)/(stadev_dec);
 boxplot(decnorm);title('Boxplot of DEC with normalization');xlabel('Stars');ylabel('DEC');
 figure;
 pmranorm=(pmra-mean_pmra)/(stadev_pmra);
@@ -189,9 +254,9 @@ boxplot(pmdecnorm);title('Boxplot of pmDEC with normalization');xlabel('Stars');
 figure;
 
 %Histograms--> 
-histogram(ra);title('RA');xlabel('Intervals or Bins');ylabel('Frequency');
+histogram(ra2);title('RA');xlabel('Intervals or Bins');ylabel('Frequency');
 figure;
-histogram(dec);title('DEC');xlabel('Intervals or Bins');ylabel('Frequency');
+histogram(dec2);title('DEC');xlabel('Intervals or Bins');ylabel('Frequency');
 figure;
 histogram(pmra);title('pmRA');xlabel('Intervals or Bins');ylabel('Frequency');
 figure;
@@ -199,6 +264,6 @@ histogram(pmdec);title('pmDEC');xlabel('Intervals or Bins');ylabel('Frequency');
 
 %Multiple scatter plots
 figure;
-scatter([dec;pmdec],[ra;pmra],'.');title('Without normalization');xlabel('DEC,pmDEC');ylabel('RA,pmRA');
+scatter([dec2;pmdec],[ra2;pmra],'.');title('Without normalization');xlabel('DEC,pmDEC');ylabel('RA,pmRA');
 figure;
 scatter([decnorm;pmdecnorm],[ranorm;pmranorm],'.');title('With normalization');xlabel('DEC,pmDEC');ylabel('RA,pmRA');
