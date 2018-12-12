@@ -11,7 +11,6 @@ clc;close all;
     % Vmag F8.3   mag    ?=-99.990 Visual or red magnitude (2)
     % pmRA F10.2  mas/yr ?=9999.90 Proper Motion in RA*cos(DE)
     % pmDE F10.2  mas/yr ?=9999.90 Proper Motion in DE
-    % Rcl F8.4    deg    Angular distance from cluster centre
 %-------------------------------------------------------------------------%
 
 %Converting Table to Array
